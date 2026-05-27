@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExeaQuiz: Desafío de Nomenclatura</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;800&family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #4e54c8;
+            --secondary: #8f94fb;
+            --accent: #00f260;
+            --error: #ff5f6d;
+            --text-dark: #2c3e50;
+            --text-light: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none; 
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: var(--text-dark);
+            position: relative;
+        }
+
+        
+        .background-bubbles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .bubble {
+            position: absolute;
+            bottom: -100px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: rise 15s infinite ease-in;
+        }
+        @keyframes rise {
+            0% { bottom: -100px; transform: translateX(0); }
+            50% { transform: translateX(100px); }
+            100% { bottom: 1080px; transform: translateX(-200px); }
+        }
+
+       
+        #game-container {
+            position: relative;
+            z-index: 1;
+            width: 90%;
+            max-width: 600px;
+            min-height: 600px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Exo 2', sans-serif;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #1a1a2e;
+        }
+
+        h1 { font-size: 2.5rem; background: -webkit-linear-gradient(#4e54c8, #8f94fb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        h2 { font-size: 1.8rem; }
+        
+        p { text-align: center; margin-bottom: 1.5rem; line-height: 1.6; }
+
+        /* Botones */
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+            width: 100%;
+            max-width: 300px;
+            margin: 10px 0;
+            font-family: 'Exo 2', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(78, 84, 200, 0.4);
+        }
+
+        .btn:active { transform: translateY(1px); }
+
+        .btn-level {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+        .btn-level:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Pantallas (Vistas) */
+        .screen {
+            display: none;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* HUD del Juego */
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 2rem;
+            font-weight: 600;
+            color: #555;
+            background: rgba(255,255,255,0.5);
+            padding: 10px 20px;
+            border-radius: 15px;
+        }
+
+        .timer-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        .timer-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 100%;
+            transition: width 1s linear;
+        }
+
+        /* Área de Pregunta */
+        .question-box {
+            background: white;
+            width: 100%;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+            text-align: center;
+            border: 2px solid #f0f0f0;
+        }
+
+        .formula {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .question-text {
+            font-size: 1.1rem;
+            color: #666;
+        }
+
+        /* Opciones */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            color: #444;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-btn:hover { border-color: var(--secondary); background: #f9f9ff; }
+        
+        .option-btn.correct {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .option-btn.wrong {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            animation: shake 0.4s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Pantalla de Resultados */
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 3rem;
+            font-weight: 800;
+            margin: 1.5rem 0;
+            box-shadow: 0 10px 25px rgba(78, 84, 200, 0.5);
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            margin-bottom: 2rem;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 0.9rem; color: #777; }
+
+        /* Utilidades para subíndices químicos */
+        sub { font-size: 0.6em; vertical-align: sub; }
+
+        /* Responsivo */
+        @media (max-width: 480px) {
+            #game-container { width: 95%; padding: 1.5rem; min-height: auto; }
+            h1 { font-size: 2rem; }
+            .formula { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-bubbles" id="bubbles-container"></div>
+
+    <main id="game-container">
+        
+        <section id="start-screen" class="screen active">
+            <h1>ExeaQuiz</h1>
+            <p>¡Bienvenido al laboratorio! Pon a prueba tus conocimientos en nomenclatura química.</p>
+            <p style="font-size: 0.9rem; color: #666;">Selecciona un nivel para comenzar. Cada nivel tiene 20 preguntas diseñadas para ponerte a prueba durante varios minutos.</p>
+            
+            <button class="btn btn-level" onclick="game.startLevel(1)">Nivel 1: Básico</button>
+            <button class="btn btn-level" onclick="game.startLevel(2)">Nivel 2: Intermedio</button>
+            <button class="btn btn-level" onclick="game.startLevel(3)">Nivel 3: Avanzado</button>
+        </section>
+
+        <section id="game-screen" class="screen">
+            <div class="hud">
+                <span id="level-indicator">Nivel 1</span>
+                <span id="score-indicator">Puntos: 0</span>
+                <span id="progress-indicator">1/20</span>
+            </div>
+            
+            <div class="timer-bar-container">
+                <div id="timer-bar" class="timer-bar"></div>
+            </div>
+
+            <div class="question-box">
+                <div id="formula-display" class="formula">H<sub>2</sub>O</div>
+                <div class="question-text">¿Cómo se nombra este compuesto?</div>
+            </div>
+
+            <div id="options-container" class="options-grid">
+                </div>
+        </section>
+
+        <section id="results-screen" class="screen">
+            <h2>Resultados del Nivel</h2>
+            <div class="score-circle" id="final-score">0</div>
+            
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="correct-count">0</div>
+                    <div class="stat-label">Correctas</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="time-taken">0s</div>
+                    <div class="stat-label">Tiempo</div>
+                </div>
+            </div>
+
+            <p id="feedback-message">¡Buen intento!</p>
+
+            <button class="btn" onclick="game.showMenu()">Volver al Menú</button>
+            <button class="btn btn-level" id="next-level-btn" onclick="game.nextLevel()">Siguiente Nivel</button>
+        </section>
+
+    </main>
+
+    <script>
+        // --- BASE DE DATOS DE PREGUNTAS ---
+        const database = {
+            1: [ // Nivel Básico: Binarios simples, Óxidos, Haluros
+                { f: "NaCl", n: "Cloruro de sodio", d: ["Clorito de sodio", "Cloruro de sodio", "Soduro de cloro", "Hipoclorito de sodio"] },
+                { f: "H<sub>2</sub>O", n: "Agua (Óxido de hidrógeno)", d: ["Agua (Óxido de hidrógeno)", "Peróxido de hidrógeno", "Hidruro de oxígeno", "Ácido clorhídrico"] },
+                { f: "Li<sub>2</sub>O", n: "Óxido de litio", d: ["Óxido de litio", "Litio oxigenado", "Monóxido de litio", "Óxido lítico"] },
+                { f: "KF", n: "Fluoruro de potasio", d: ["Fluoruro de potasio", "Potasio fluorado", "Fluorito de potasio", "Pentafluoruro de potasio"] },
+                { f: "MgO", n: "Óxido de magnesio", d: ["Óxido de magnesio", "Magnesia", "Hidróxido de magnesio", "Dióxido de magnesio"] },
+                { f: "CaCl<sub>2</sub>", n: "Cloruro de calcio", d: ["Cloruro de calcio", "Dicloruro de calcio", "Clorito de calcio", "Calcio clorado"] },
+                { f: "Al<sub>2</sub>O<sub>3</sub>", n: "Óxido de aluminio", d: ["Óxido de aluminio", "Alúmina", "Trióxido de dialuminio", "Hidróxido de aluminio"] },
+                { f: "ZnS", n: "Sulfuro de cinc", d: ["Sulfuro de cinc", "Sulfato de cinc", "Cinc sulfurado", "Disulfuro de cinc"] },
+                { f: "KI", n: "Yoduro de potasio", d: ["Yoduro de potasio", "Yodito de potasio", "Potasio yodado", "Peryodato de potasio"] },
+                { f: "NaH", n: "Hidruro de sodio", d: ["Hidruro de sodio", "Sodio hidrógeno", "Hidróxido de sodio", "Ácido clorhídrico"] },
+                { f: "BaO", n: "Óxido de bario", d: ["Óxido de bario", "Bario oxigenado", "Monóxido de bario", "Hidróxido de bario"] },
+                { f: "AgCl", n: "Cloruro de plata", d: ["Cloruro de plata", "Plata clorada", "Clorito de plata", "Cloruro argéntico"] },
+                { f: "CaF<sub>2</sub>", n: "Fluoruro de calcio", d: ["Fluoruro de calcio", "Fluorita", "Difluoruro de calcio", "Calcio fluorado"] },
+                { f: "SrO", n: "Óxido de estroncio", d: ["Óxido de estroncio", "Estroncio oxigenado", "Hidróxido de estroncio", "Óxido ácido de estroncio"] },
+                { f: "Na<sub>2</sub>S", n: "Sulfuro de sodio", d: ["Sulfuro de sodio", "Sulfato de sodio", "Disulfuro de disodio", "Ácido sulfhídrico"] },
+                { f: "LiBr", n: "Bromuro de litio", d: ["Bromuro de litio", "Litio bromado", "Bromito de litio", "Tribromuro de litio"] },
+                { f: "CaI<sub>2</sub>", n: "Yoduro de calcio", d: ["Yoduro de calcio", "Calcio yodado", "Yodito de calcio", "Diyoduro de calcio"] },
+                { f: "Mg<sub>3</sub>N<sub>2</sub>", n: "Nitruro de magnesio", d: ["Nitruro de magnesio", "Magnesio nitrogenado", "Amoníaco magnésico", "Nitrato de magnesio"] },
+                { f: "Na<sub>3</sub>N", n: "Nitruro de sodio", d: ["Nitruro de sodio", "Sodio nitrogenado", "Nitrato de sodio", "Nitrito de sodio"] },
+                { f: "BeO", n: "Óxido de berilio", d: ["Óxido de berilio", "Berilio oxigenado", "Hidróxido de berilio", "Dióxido de berilio"] }
+            ],
+            2: [ // Nivel Intermedio: Metales transición (Stock), Hidróxidos
+                { f: "FeO", n: "Óxido de hierro (II)", d: ["Óxido de hierro (II)", "Óxido ferroso", "Óxido de hierro (III)", "Monóxido de hierro"] },
+                { f: "Fe<sub>2</sub>O<sub>3</sub>", n: "Óxido de hierro (III)", d: ["Óxido de hierro (III)", "Óxido férrico", "Óxido de hierro (II)", "Trióxido de dihierro"] },
+                { f: "Cu<sub>2</sub>O", n: "Óxido de cobre (I)", d: ["Óxido de cobre (I)", "Óxido cuproso", "Óxido de cobre (II)", "Monóxido de dicobre"] },
+                { f: "CuO", n: "Óxido de cobre (II)", d: ["Óxido de cobre (II)", "Óxido cúprico", "Óxido de cobre (I)", "Monóxido de cobre"] },
+                { f: "PbO<sub>2</sub>", n: "Óxido de plomo (IV)", d: ["Óxido de plomo (IV)", "Dióxido de plomo", "Óxido plúmbico", "Óxido de plomo (II)"] },
+                { f: "MnO<sub>2</sub>", n: "Óxido de manganeso (IV)", d: ["Óxido de manganeso (IV)", "Dióxido de manganeso", "Óxido mangánico", "Óxido de manganeso (VII)"] },
+                { f: "Hg<sub>2</sub>Cl<sub>2</sub>", n: "Cloruro de mercurio (I)", d: ["Cloruro de mercurio (I)", "Calomelanos", "Cloruro de mercurio (II)", "Dicloruro de mercurio"] },
+                { f: "HgCl<sub>2</sub>", n: "Cloruro de mercurio (II)", d: ["Cloruro de mercurio (II)", "Cloruro mercúrico", "Cloruro de mercurio (I)", "Sublimado corrosivo"] },
+                { f: "Cr<sub>2</sub>O<sub>3</sub>", n: "Óxido de cromo (III)", d: ["Óxido de cromo (III)", "Óxido crómico", "Óxido de cromo (VI)", "Trióxido de dicromo"] },
+                { f: "Ni(OH)<sub>2</sub>", n: "Hidróxido de níquel (II)", d: ["Hidróxido de níquel (II)", "Níquel hidróxido", "Hidróxido de níquel (III)", "Óxido de níquel"] },
+                { f: "Fe(OH)<sub>3</sub>", n: "Hidróxido de hierro (III)", d: ["Hidróxido de hierro (III)", "Hidróxido férrico", "Hidróxido de hierro (II)", "Óxido de hierro"] },
+                { f: "Cu(OH)<sub>2</sub>", n: "Hidróxido de cobre (II)", d: ["Hidróxido de cobre (II)", "Hidróxido cúprico", "Hidróxido de cobre (I)", "Óxido de cobre"] },
+                { f: "Zn(OH)<sub>2</sub>", n: "Hidróxido de cinc", d: ["Hidróxido de cinc", "Hidróxido de zinc", "Óxido de cinc", "Cinc hidratado"] },
+                { f: "Au<sub>2</sub>O<sub>3</sub>", n: "Óxido de oro (III)", d: ["Óxido de oro (III)", "Óxido áurico", "Óxido de oro (I)", "Trióxido de dioro"] },
+                { f: "CoO", n: "Óxido de cobalto (II)", d: ["Óxido de cobalto (II)", "Óxido cobaltoso", "Óxido de cobalto (III)", "Monóxido de cobalto"] },
+                { f: "PtO<sub>2</sub>", n: "Óxido de platino (IV)", d: ["Óxido de platino (IV)", "Dióxido de platino", "Óxido de platino (II)", "Platino oxigenado"] },
+                { f: "Ag<sub>2</sub>O", n: "Óxido de plata", d: ["Óxido de plata", "Óxido de plata (I)", "Óxido argéntico", "Plata oxigenada"] },
+                { f: "SnO", n: "Óxido de estaño (II)", d: ["Óxido de estaño (II)", "Óxido estannoso", "Óxido de estaño (IV)", "Monóxido de estaño"] },
+                { f: "SnO<sub>2</sub>", n: "Óxido de estaño (IV)", d: ["Óxido de estaño (IV)", "Óxido estánico", "Óxido de estaño (II)", "Dióxido de estaño"] },
+                { f: "TiO<sub>2</sub>", n: "Óxido de titanio (IV)", d: ["Óxido de titanio (IV)", "Dióxido de titanio", "Óxido de titanio (II)", "Blanco de titanio"] }
+            ],
+            3: [ // Nivel Avanzado: Ácidos, Sales oxisales, Compuestos complejos
+                { f: "H<sub>2</sub>SO<sub>4</sub>", n: "Ácido sulfúrico", d: ["Ácido sulfúrico", "Ácido sulfuroso", "Sulfato de hidrógeno", "Trioxosulfato (VI) de hidrógeno"] },
+                { f: "HNO<sub>3</sub>", n: "Ácido nítrico", d: ["Ácido nítrico", "Ácido nitroso", "Nitrato de hidrógeno", "Trioxonitrato (V) de hidrógeno"] },
+                { f: "H<sub>3</sub>PO<sub>4</sub>", n: "Ácido fosfórico", d: ["Ácido fosfórico", "Ácido fosforoso", "Fosfato de hidrógeno", "Tetraoxofosfato (V) de hidrógeno"] },
+                { f: "H<sub>2</sub>CO<sub>3</sub>", n: "Ácido carbónico", d: ["Ácido carbónico", "Anhídrido carbónico", "Carbonato de hidrógeno", "Trioxocarbonato (IV) de hidrógeno"] },
+                { f: "Na<sub>2</sub>SO<sub>4</sub>", n: "Sulfato de sodio", d: ["Sulfato de sodio", "Sulfito de sodio", "Sulfuro de sodio", "Tetraoxosulfato (VI) de sodio"] },
+                { f: "KNO<sub>3</sub>", n: "Nitrato de potasio", d: ["Nitrato de potasio", "Nitrito de potasio", "Nitrógeno de potasio", "Salitre"] },
+                { f: "Ca<sub>3</sub>(PO<sub>4</sub>)<sub>2</sub>", n: "Fosfato de calcio", d: ["Fosfato de calcio", "Fosfito de calcio", "Fosfuro de calcio", "Fosfato tricálcico"] },
+                { f: "KMnO<sub>4</sub>", n: "Permanganato de potasio", d: ["Permanganato de potasio", "Manganato de potasio", "Dióxido de manganeso", "Oxidante potásico"] },
+                { f: "K<sub>2</sub>Cr<sub>2</sub>O<sub>7</sub>", n: "Dicromato de potasio", d: ["Dicromato de potasio", "Cromato de potasio", "Óxido de cromo", "Dicromo potásico"] },
+                { f: "NaClO<sub>3</sub>", n: "Clorato de sodio", d: ["Clorato de sodio", "Clorito de sodio", "Hipoclorito de sodio", "Perclorato de sodio"] },
+                { f: "CaCO<sub>3</sub>", n: "Carbonato de calcio", d: ["Carbonato de calcio", "Carburo de calcio", "Ácido carbónico", "Caliza"] },
+                { f: "FeSO<sub>4</sub>", n: "Sulfato de hierro (II)", d: ["Sulfato de hierro (II)", "Sulfato ferroso", "Sulfato de hierro (III)", "Sulfuro de hierro"] },
+                { f: "Cu<sub>2</sub>CO<sub>3</sub>(OH)<sub>2</sub>", n: "Carbonato básico de cobre", d: ["Carbonato básico de cobre", "Malaquita", "Carbonato de cobre (II)", "Hidróxido de cobre"] },
+                { f: "NaHCO<sub>3</sub>", n: "Bicarbonato de sodio", d: ["Bicarbonato de sodio", "Carbonato ácido de sodio", "Carbonato de sodio", "Hidrogenocarbonato de sodio"] },
+                { f: "Al<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub>", n: "Sulfato de aluminio", d: ["Sulfato de aluminio", "Sulfito de aluminio", "Aluminio sulfurado", "Sulfato alumínico"] },
+                { f: "NH<sub>4</sub>Cl", n: "Cloruro de amonio", d: ["Cloruro de amonio", "Amoníaco clorado", "Cloruro amónico", "Sal de amoníaco"] },
+                { f: "H<sub>2</sub>SO<sub>3</sub>", n: "Ácido sulfuroso", d: ["Ácido sulfuroso", "Ácido sulfúrico", "Sulfito de hidrógeno", "Trioxosulfato (IV) de hidrógeno"] },
+                { f: "MgSO<sub>4</sub>·7H<sub>2</sub>O", n: "Sulfato de magnesio heptahidratado", d: ["Sulfato de magnesio heptahidratado", "Sal de Epsom", "Sulfato de magnesio anhidro", "Magnesia sulfurada"] },
+                { f: "Na<sub>2</sub>S<sub>2</sub>O<sub>3</sub>", n: "Tiosulfato de sodio", d: ["Tiosulfato de sodio", "Sulfato de sodio", "Hiposulfito de sodio", "Sulfito de sodio"] },
+                { f: "Pb(CH<sub>3</sub>COO)<sub>2</sub>", n: "Acetato de plomo (II)", d: ["Acetato de plomo (II)", "Plomo acetato", "Carbonato de plomo", "Azúcar de plomo"] }
+            ]
+        };
+
+        // --- LÓGICA DEL JUEGO ---
+        const game = {
+            currentLevel: 1,
+            currentQuestions: [],
+            currentQuestionIndex: 0,
+            score: 0,
+            correctAnswers: 0,
+            startTime: 0,
+            timerInterval: null,
+            timeLimit: 60, 
+            timeLeft: 60,
+            isAnswering: false,
+
+            screens: document.querySelectorAll('.screen'),
+            formulaEl: document.getElementById('formula-display'),
+            optionsEl: document.getElementById('options-container'),
+            levelIndEl: document.getElementById('level-indicator'),
+            scoreIndEl: document.getElementById('score-indicator'),
+            progressIndEl: document.getElementById('progress-indicator'),
+            timerBar: document.getElementById('timer-bar'),
+            finalScoreEl: document.getElementById('final-score'),
+            correctCountEl: document.getElementById('correct-count'),
+            timeTakenEl: document.getElementById('time-taken'),
+            feedbackMsgEl: document.getElementById('feedback-message'),
+            nextLevelBtn: document.getElementById('next-level-btn'),
+
+            init() {
+                this.generateBubbles();
+            },
+
+            generateBubbles() {
+                const container = document.getElementById('bubbles-container');
+                for(let i=0; i<15; i++) {
+                    const b = document.createElement('div');
+                    b.className = 'bubble';
+                    const size = Math.random() * 60 + 20;
+                    b.style.width = `${size}px`;
+                    b.style.height = `${size}px`;
+                    b.style.left = `${Math.random() * 100}%`;
+                    b.style.animationDuration = `${Math.random() * 10 + 10}s`;
+                    b.style.animationDelay = `${Math.random() * 5}s`;
+                    container.appendChild(b);
+                }
+            },
+
+            showScreen(id) {
+                this.screens.forEach(s => s.classList.remove('active'));
+                document.getElementById(id).classList.add('active');
+            },
+
+            startLevel(level) {
+                this.currentLevel = level;
+                this.score = 0;
+                this.correctAnswers = 0;
+                this.currentQuestionIndex = 0;
+                
+                this.currentQuestions = [...database[level]];
+                this.shuffleArray(this.currentQuestions);
+
+                this.levelIndEl.textContent = `Nivel ${level}`;
+                this.scoreIndEl.textContent = `Puntos: 0`;
+                this.showScreen('game-screen');
+                
+                this.startTime = Date.now();
+                this.loadQuestion();
+            },
+
+            loadQuestion() {
+                if (this.currentQuestionIndex >= this.currentQuestions.length) {
+                    this.endLevel();
+                    return;
+                }
+
+                this.isAnswering = false;
+                const q = this.currentQuestions[this.currentQuestionIndex];
+                
+                this.progressIndEl.textContent = `${this.currentQuestionIndex + 1}/${this.currentQuestions.length}`;
+                this.formulaEl.innerHTML = q.f;
+
+                this.optionsEl.innerHTML = '';
+                const options = [...q.d]; 
+                
+                this.shuffleArray(options);
+
+                options.forEach(optText => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.textContent = optText;
+                    btn.onclick = () => this.checkAnswer(btn, optText, q.n);
+                    this.optionsEl.appendChild(btn);
+                });
+
+                this.resetTimer();
+            },
+
+            checkAnswer(btn, selected, correct) {
+                if (this.isAnswering) return;
+                this.isAnswering = true;
+                clearInterval(this.timerInterval);
+
+                const isCorrect = selected === correct;
+
+                if (isCorrect) {
+                    btn.classList.add('correct');
+                    this.score += 100; 
+                    this.score += Math.floor(this.timeLeft * 2);
+                    this.correctAnswers++;
+                } else {
+                    btn.classList.add('wrong');
+                    const buttons = this.optionsEl.querySelectorAll('.option-btn');
+                    buttons.forEach(b => {
+                        if (b.textContent === correct) b.classList.add('correct');
+                    });
+                }
+
+                this.scoreIndEl.textContent = `Puntos: ${this.score}`;
+
+                setTimeout(() => {
+                    this.currentQuestionIndex++;
+                    this.loadQuestion();
+                }, 2000); 
+            },
+
+            resetTimer() {
+                clearInterval(this.timerInterval);
+                this.timeLeft = this.timeLimit;
+                this.updateTimerBar();
+                
+                this.timerInterval = setInterval(() => {
+                    this.timeLeft--;
+                    this.updateTimerBar();
+                    if (this.timeLeft <= 0) {
+                        this.isAnswering = true;
+                        clearInterval(this.timerInterval);
+                        const q = this.currentQuestions[this.currentQuestionIndex];
+                        const buttons = this.optionsEl.querySelectorAll('.option-btn');
+                        buttons.forEach(b => {
+                            if (b.textContent === q.n) b.classList.add('correct');
+                        });
+                        setTimeout(() => {
+                            this.currentQuestionIndex++;
+                            this.loadQuestion();
+                        }, 2000);
+                    }
+                }, 1000);
+            },
+
+            updateTimerBar() {
+                const pct = (this.timeLeft / this.timeLimit) * 100;
+                this.timerBar.style.width = `${pct}%`;
+                if (pct < 30) this.timerBar.style.backgroundColor = '#ff5f6d';
+                else this.timerBar.style.backgroundColor = '#00f260';
+            },
+
+            endLevel() {
+                clearInterval(this.timerInterval);
+                const totalTime = Math.floor((Date.now() - this.startTime) / 1000);
+                
+                this.finalScoreEl.textContent = this.score;
+                this.correctCountEl.textContent = `${this.correctAnswers}/${this.currentQuestions.length}`;
+                this.timeTakenEl.textContent = `${this.totalTimeString(totalTime)}`;
+                
+                const percentage = (this.correctAnswers / this.currentQuestions.length) * 100;
+                if (percentage === 100) this.feedbackMsgEl.textContent = "¡Perfecto! Eres un maestro de la química.";
+                else if (percentage >= 80) this.feedbackMsgEl.textContent = "¡Excelente trabajo! Casi perfecto.";
+                else if (percentage >= 60) this.feedbackMsgEl.textContent = "Buen intento, pero puedes mejorar.";
+                else this.feedbackMsgEl.textContent = "Sigue practicando, la ciencia requiere paciencia.";
+
+                if (this.currentLevel < 3) {
+                    this.nextLevelBtn.style.display = 'block';
+                    this.nextLevelBtn.textContent = `Ir al Nivel ${this.currentLevel + 1}`;
+                } else {
+                    this.nextLevelBtn.style.display = 'none';
+                    if (percentage > 80) this.feedbackMsgEl.textContent = "¡Has completado todos los niveles! ¡Eres un genio!";
+                }
+
+                this.showScreen('results-screen');
+            },
+
+            nextLevel() {
+                this.startLevel(this.currentLevel + 1);
+            },
+
+            showMenu() {
+                this.showScreen('start-screen');
+            },
+
+            shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            },
+
+            totalTimeString(seconds) {
+                const m = Math.floor(seconds / 60);
+                const s = seconds % 60;
+                return `${m}m ${s}s`;
+            }
+        };
+
+        window.onload = () => game.init();
+    </script>
+</body>
+</html>
